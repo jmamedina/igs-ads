@@ -1,6 +1,9 @@
+'use client'
+
 import Link from 'next/link';
-import React from 'react'
+import React from 'react';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation'; // Updated import
 
 const menuItems = [
     {
@@ -15,6 +18,11 @@ const menuItems = [
                 icon: "/upload.png",
                 label: "Upload",
                 href: "/upload",
+            },
+            {
+                icon: "/files.png",
+                label: "Files",
+                href: "/files",
             },
         ],
     },
@@ -35,24 +43,33 @@ const menuItems = [
     },
 ];
 
-
 const Menu = () => {
+    const currentPath = usePathname(); // Updated hook
+
     return (
         <div className="">
             {menuItems.map(i => (
                 <div className='flex flex-col gap-2' key={i.title}>
-                    <span className="hidden lg:pl-3 lg:block text-gray-500 font-light my-4">{i.title}</span>
-                    {i.items.map((item) => (
-                        <Link href={item.href} key={item.label} className="flex items-center justify-center lg:justify-start gap-4 text-gray-600 py-2 rounded-md md-px-2 hover:bg-lamaSkyLight">
-                            <div className="w-2"></div>
-                            <Image src={item.icon} alt="" width={20} height={20}/>
-                            <span className="hidden lg:block">{item.label}</span>
-                        </Link>
-                    ))}
+                    <span className="hidden lg:pl-3 lg:block text-gray-500 font-light">{i.title}</span>
+                    {i.items.map((item) => {
+                        const isActive = currentPath === item.href;
+                        return (
+                            <Link
+                                href={item.href}
+                                key={item.label}
+                                className={`flex items-center justify-center lg:justify-start gap-4 text-gray-600 py-2 md-px-2 ${isActive ? 'bg-lamaSkyLight ' : 'hover:bg-lamaSkyLight'}`}
+                            >
+                                <div className="lg:pl-4 flex items-center gap-4">
+                                    <Image src={item.icon} alt="" width={20} height={20} />
+                                    <span className="hidden lg:block">{item.label}</span>
+                                </div>
+                            </Link>
+                        );
+                    })}
                 </div>
             ))}
         </div>
     )
 }
 
-export default Menu
+export default Menu;
