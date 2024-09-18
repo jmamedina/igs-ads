@@ -1,7 +1,5 @@
 'use client'
 import React, { useState } from 'react';
-import axios from 'axios';
-
 
 const UploadPage = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -36,7 +34,7 @@ const UploadPage = () => {
       const response = await fetch('https://347egpwx2j.execute-api.ap-northeast-1.amazonaws.com/test/upload/initiate', {
         method: 'POST',
         body: JSON.stringify({
-          key: filename, // Use the dynamic filename
+          key: "linemo.mp4", // Use the dynamic filename
         }),
       });
 
@@ -64,7 +62,7 @@ const UploadPage = () => {
     }
   };
 
-  const uploadPart = async (partNumber: number, filePart: Blob, uploadId: string) => {
+  const uploadPart = async (partNumber: number, filePart: Blob, uploadId: string, fileKey: string) => {
     if (!uploadId) {
       console.error('uploadId is missing.');
       setError('uploadId is missing');
@@ -74,7 +72,7 @@ const UploadPage = () => {
     const formData = new FormData();
     formData.append('uploadId', uploadId);
     formData.append('partNumber', partNumber.toString());
-    formData.append('filePart', filePart, `part${partNumber}.mp4`);
+    formData.append('filePart', filePart, fileKey); // Use the same fileKey for all parts
   
     try {
       const response = await fetch('https://347egpwx2j.execute-api.ap-northeast-1.amazonaws.com/test/upload/part', {
@@ -89,85 +87,50 @@ const UploadPage = () => {
       const rawResponse = await response.text(); // Read response as text
       console.log(`Raw response for part ${partNumber}:`, rawResponse);
   
-      // Clean the raw response by removing async function block, spaces, and \ characters
-      let cleanedResponse = rawResponse
-        .replace(/async\s?\(\)\s?=>\s?\{[\s\S]*?\}/g, '')  // Remove async function block
-        .replace(/\\n|\\t|\\|"/g, '')                      // Remove \, newlines, tabs, and excess quotes
-        .replace(/\s+/g, '')                               // Remove extra spaces
-        .trim();                                           // Trim any trailing/leading spaces
-  
-      console.log(`Cleaned response: ${cleanedResponse}`);
-
-
-      JSON.stringify(cleanedResponse)
-      console.log( JSON.stringify(cleanedResponse));
-
-      let testRaw = {
-        "statusCode": 200,
-        "body": {
-          "message": "Upload successful",
-          "result": {
-            "ETag": "ddc8290ab02eb8493f03b4c68cf00a03",
-            "Bucket": "igs-test-ads",
-            "Key": "part1.mp4",
-            "Location": "https://igs-test-ads.s3.amazonaws.com/part1.mp4"
-          }
-        },
-        "headers": {
-          "Content-Type": "application/json"
-        }
-      };
-      
-      console.log(testRaw);
-  
-      // Parse the cleaned outer response
-      let parsedOuterResponse;
+      // Parse the fixed response
+      let parsedResponse;
       try {
-        parsedOuterResponse = JSON.parse(JSON.stringify(testRaw));
-        console.log(`Parsed outer response:`, parsedOuterResponse);
-      } catch (parseError) {
-        console.error('Error parsing cleaned response:', parseError);
-        setError(`Error parsing cleaned response for part ${partNumber}: ${parseError}`);
+        parsedResponse = JSON.parse(rawResponse);
+      } catch (error) {
+        console.error('Error parsing raw response:', error);
+        setError(`Error parsing raw response: ${error}`);
         return;
       }
   
-      // Extract and clean the 'body' field, which is also a JSON string
-      let parsedBody;
-      if (parsedOuterResponse.body) {
-        try {
-          const cleanedBody = parsedOuterResponse.body
-            .replace(/\\n|\\t|\\|"/g, '')                  // Remove \, newlines, tabs, and excess quotes
-            .replace(/\s+/g, '')                           // Remove extra spaces
-            .trim();                                       // Clean the body string further
-          
-          parsedBody = JSON.parse(cleanedBody);
-          console.log(`Parsed body for part ${partNumber}:`, parsedBody);
-        } catch (bodyParseError) {
-          console.error('Error parsing body field:', bodyParseError);
-          setError(`Error parsing body field for part ${partNumber}: ${bodyParseError}`);
-          return;
-        }
+      // Store the ETag for this part
+      if (parsedResponse && parsedResponse.body && parsedResponse.body.result && parsedResponse.body.result.ETag) {
+        const etag = parsedResponse.body.result.ETag;
+        console.log(`ETag for part ${partNumber}: ${etag}`);
+        return etag; // Return the ETag to use later in completing the upload
       } else {
-        console.error('Body field is missing in the parsed response.');
-        setError(`Body field is missing in the response for part ${partNumber}`);
+        throw new Error('ETag missing in the response');
       }
+  
     } catch (error) {
       console.error(`Error uploading part ${partNumber}:`, error);
-      setError(`Error uploading part ${partNumber}: ${error}`);
+      setError(`Error uploading part ${partNumber}: ${error}`); // Use error.message for clarity
     }
   };
   
   
-  
-  const completeUpload = async (uploadId: string) => {
+  const completeUpload = async (uploadId: string, parts: { ETag: string, PartNumber: number }[], fileKey: string) => {
     try {
-      await fetch('https://347egpwx2j.execute-api.ap-northeast-1.amazonaws.com/test/upload/complete', {
+      const response = await fetch('https://347egpwx2j.execute-api.ap-northeast-1.amazonaws.com/test/upload/complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ uploadId })
+        body: JSON.stringify({
+          uploadId,
+          key: fileKey,
+          parts // Pass the ETags and part numbers here
+        }),
       });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+  
       alert('Upload completed successfully!');
       // Reset form
       setFile(null);
@@ -176,9 +139,11 @@ const UploadPage = () => {
       setDescription('');
       setUploadId(null);
     } catch (error) {
+      console.error('Failed to complete upload:', error);
       setError('Failed to complete upload.');
     }
   };
+  
 
 
   const handleUpload = async () => {
@@ -228,7 +193,7 @@ const UploadPage = () => {
       }
 
       console.log('Completing upload');
-      // await completeUpload(localUploadId); // Pass localUploadId to completeUpload
+      await completeUpload(localUploadId); // Pass localUploadId to completeUpload
       console.log('Upload completed successfully');
       setUploading(false);
     } catch (error) {
