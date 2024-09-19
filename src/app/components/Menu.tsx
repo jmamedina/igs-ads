@@ -21,7 +21,7 @@ const menuItems = [
             },
             {
                 icon: "/files.png",
-                label: "Files",
+                label: "Videos",
                 href: "/files",
             },
         ],
