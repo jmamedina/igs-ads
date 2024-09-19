@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { v4 as uuidv4 } from 'uuid';
+
 
 const UploadPage = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -63,7 +65,6 @@ const UploadPage = () => {
     try {
       const uniqueFileName = getUniqueFileName(file.name); // Generate unique filename
       const numberOfParts = Math.ceil(file.size / PART_SIZE);
-      
 
       const response = await fetch('https://347egpwx2j.execute-api.ap-northeast-1.amazonaws.com/test/upload/pre-signed', {
         method: 'POST',
@@ -191,10 +192,45 @@ const UploadPage = () => {
       }
 
       const data = await response.json();
+      // Create the payload for DynamoDB
+      const dynamoDBPayload = {
+        id: uuidv4(),
+        title: title,           // Include title
+        description: description, // Include description
+        s3Key: uniqueFileName,   // S3 key of the uploaded file
+        uploadTimestamp: new Date().toISOString(), // Timestamp of the upload
+      };
+
+      // Upload metadata to DynamoDB
+      await uploadToDynamoDB(dynamoDBPayload);
+
       clearForm(); // Clear the file after successful upload
     } catch (error) {
       console.error('Error during finalize upload:', error);
       setError(error.message);
+    }
+  };
+
+  const uploadToDynamoDB = async (payload) => {
+
+    console.log(" JSON.stringify(payload)",  JSON.stringify(payload))
+    try {
+      const response = await fetch('https://347egpwx2j.execute-api.ap-northeast-1.amazonaws.com/test/upload/metadata-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('Error uploading to DynamoDB:', { status: response.status, errorBody });
+        throw new Error('Failed to upload metadata to DynamoDB');
+      }
+    } catch (error) {
+      console.error('Error during DynamoDB upload:', error);
+      throw error; // Re-throw the error to be handled in finalizeUpload
     }
   };
 
@@ -226,7 +262,7 @@ const UploadPage = () => {
           />
           <div className="flex flex-col items-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" className="w-12 h-12 text-gray-500 mb-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M16 16h-3v5h-2v-5h-3l4-4 4 4zm3.479-5.908c-.212-3.951-3.473-7.092-7.479-7.092s-7.267 3.141-7.479 7.092c-2.57.463-4.521 2.706-4.521 5.408 0 3.037 2.463 5.5 5.5 5.5h3.5v-2h-3.5c-1.93 0-3.5-1.57-3.5-3.5 0-2.797 2.479-3.833 4.433-3.72-.167-4.218 2.208-6.78 5.567-6.78 3.357 0 5.734 2.56 5.567 6.78 1.954-.113 4.433.923 4.433 3.72 0 1.93-1.57 3.5-3.5 3.5h-3.5v2h3.5c3.037 0 5.5-2.463 5.5-5.5 0-2.702-1.951-4.945-4.521-5.408z"/>
+              <path d="M16 16h-3v5h-2v-5h-3l4-4 4 4zm3.479-5.908c-.212-3.951-3.473-7.092-7.479-7.092s-7.267 3.141-7.479 7.092c-2.57.463-4.521 2.706-4.521 5.408 0 3.037 2.463 5.5 5.5 5.5h3.5v-2h-3.5c-1.93 0-3.5-1.57-3.5-3.5 0-2.797 2.479-3.833 4.433-3.72-.167-4.218 2.208-6.78 5.567-6.78 3.357 0 5.734 2.56 5.567 6.78 1.954-.113 4.433.923 4.433 3.72 0 1.93-1.57 3.5-3.5 3.5h-3.5v2h3.5c3.037 0 5.5-2.463 5.5-5.5 0-2.702-1.951-4.945-4.521-5.408z" />
             </svg>
             <p className="text-gray-500">Drag & drop your video here or click to select</p>
           </div>
