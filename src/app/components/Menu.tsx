@@ -11,17 +11,17 @@ const menuItems = [
         items: [
             {
                 icon: "/home.png",
-                label: "Home",
+                label: "トップ",
                 href: "/admin",
             },
             {
                 icon: "/upload.png",
-                label: "Upload",
+                label: "アップロード",
                 href: "/upload",
             },
             {
                 icon: "/files.png",
-                label: "Videos",
+                label: "動画",
                 href: "/files",
             },
         ],
@@ -31,12 +31,12 @@ const menuItems = [
         items: [
             {
                 icon: "/profile.png",
-                label: "Profile",
+                label: "プロフィル",
                 href: "/profile",
             },
             {
                 icon: "/logout.png",
-                label: "Logout",
+                label: "ログアウト",
                 href: "/Logout",
             },
         ],
