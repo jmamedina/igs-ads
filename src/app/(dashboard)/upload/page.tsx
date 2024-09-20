@@ -20,7 +20,7 @@ const UploadPage = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const selectedFile = event.target.files[0];
-      if (selectedFile.size > 0 && selectedFile.size <= MAX_FILE_SIZE && isValidVideoFile(selectedFile)) {
+      if (selectedFile.size > 0) {
         setFile(selectedFile);
         setError(null);
         const previewUrl = URL.createObjectURL(selectedFile);
@@ -59,7 +59,7 @@ const UploadPage = () => {
       return;
     }
 
-    toast.info('Upload initiated. Please wait...', { autoClose: true });
+    toast.info('アップロードが開始されました。お待ちください...', { autoClose: true });
     setShowLoadingDialog(true);
 
     try {
@@ -98,7 +98,7 @@ const UploadPage = () => {
       const { uploadId, presignedUrls } = bodyData;
 
       await uploadParts(presignedUrls, numberOfParts, uploadId, uniqueFileName);
-      toast.success('Upload completed successfully!');
+      toast.success('アップロードが成功しました！');
     } catch (error) {
       toast.error(`Upload failed: ${error.message}`);
       setError(error.message);
@@ -236,7 +236,7 @@ const UploadPage = () => {
 
   return (
     <div className="p-5 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4 text-gray-700">Upload Your Video</h1>
+      <h1 className="text-2xl font-bold mb-4 text-gray-700">動画アップロード</h1>
       <div className="flex flex-col md:flex-row gap-6">
         <div
           className={`flex-1 border-dashed border-2 rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition
@@ -264,12 +264,12 @@ const UploadPage = () => {
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" className="w-12 h-12 text-gray-500 mb-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M16 16h-3v5h-2v-5h-3l4-4 4 4zm3.479-5.908c-.212-3.951-3.473-7.092-7.479-7.092s-7.267 3.141-7.479 7.092c-2.57.463-4.521 2.706-4.521 5.408 0 3.037 2.463 5.5 5.5 5.5h3.5v-2h-3.5c-1.93 0-3.5-1.57-3.5-3.5 0-2.797 2.479-3.833 4.433-3.72-.167-4.218 2.208-6.78 5.567-6.78 3.357 0 5.734 2.56 5.567 6.78 1.954-.113 4.433.923 4.433 3.72 0 1.93-1.57 3.5-3.5 3.5h-3.5v2h3.5c3.037 0 5.5-2.463 5.5-5.5 0-2.702-1.951-4.945-4.521-5.408z" />
             </svg>
-            <p className="text-gray-500">Drag & drop your video here or click to select</p>
+            <p className="text-gray-500">こちらに動画をドラッグ＆ドロップするか、クリックして選択してください</p>
           </div>
         </div>
 
         <div className="flex-1">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">名前</label>
           <input
             type="text"
             className="border border-gray-300 rounded-md p-2 w-full"
@@ -277,7 +277,7 @@ const UploadPage = () => {
             onChange={(e) => setTitle(e.target.value)}
           />
 
-          <label className="block text-sm font-medium text-gray-700 mt-4 mb-1">Description</label>
+          <label className="block text-sm font-medium text-gray-700 mt-4 mb-1">説明</label>
           <textarea
             className="border border-gray-300 rounded-md p-2 w-full"
             rows={4}
@@ -313,7 +313,7 @@ const UploadPage = () => {
       {showLoadingDialog && (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75">
           <div className="bg-white p-4 rounded shadow">
-            <p className="text-lg">Uploading video... Please wait.</p>
+            <p className="text-lg">動画をアップロード中です... お待ちください。</p>
           </div>
         </div>
       )}
