@@ -37,6 +37,11 @@ const menuItems = [
                 href: "/profile",
             },
             {
+                icon: "/profile.png",
+                label: "スタッフ管理",
+                href: "/users",
+            },
+            {
                 icon: "/logout.png",
                 label: "ログアウト",
                 href: "/logout", // This can stay here but won't be used as a link
