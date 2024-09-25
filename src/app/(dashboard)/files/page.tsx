@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Blocks } from 'react-loader-spinner';
 
 const VideoPage = () => {
@@ -11,29 +11,65 @@ const VideoPage = () => {
   const [editedTitle, setEditedTitle] = useState('');
   const [editedDescription, setEditedDescription] = useState('');
   const [checkedVideos, setCheckedVideos] = useState({});
-
   const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState(null);
 
-  useEffect(() => {
-    const fetchVideos = async () => {
-      try {
-        const response = await fetch('https://347egpwx2j.execute-api.ap-northeast-1.amazonaws.com/test/retrieve');
-        if (!response.ok) {
-          throw new Error('Failed to fetch videos');
-        }
-        const data = await response.json();
-        const parsedBody = JSON.parse(data.body);
-        setVideos(parsedBody.items);
-      } catch (error) {
-        setError(error.message);
-      } finally {
-        setLoading(false);
+  const videoRef = useRef(null);
+  const observerRef = useRef(null);
+
+  // Fetch videos from the API
+  const fetchVideos = async () => {
+    try {
+      const response = await fetch('https://347egpwx2j.execute-api.ap-northeast-1.amazonaws.com/test/retrieve');
+      if (!response.ok) {
+        throw new Error('Failed to fetch videos');
       }
+      const data = await response.json();
+      const parsedBody = JSON.parse(data.body);
+      setVideos(parsedBody.items);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Setup IntersectionObserver for lazy loading
+  const setupObserver = useCallback(() => {
+    const loadVideo = (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const videoElement = entry.target;
+          const src = videoElement.getAttribute('data-src');
+          videoElement.src = src; // Set video source
+          observerRef.current.unobserve(videoElement); // Stop observing this video
+        }
+      });
     };
 
+    observerRef.current = new IntersectionObserver(loadVideo, {
+      rootMargin: '0px',
+      threshold: 0.25, // Trigger when 25% of the video is visible
+    });
+
+    const videoElements = document.querySelectorAll('video[data-src]');
+    videoElements.forEach((video) => {
+      observerRef.current.observe(video);
+    });
+
+    return () => {
+      observerRef.current.disconnect();
+    };
+  }, [videos]);
+
+  useEffect(() => {
     fetchVideos();
   }, []);
+
+  useEffect(() => {
+    const cleanupObserver = setupObserver();
+    return cleanupObserver;
+  }, [setupObserver]);
 
   const handleEditClick = (video) => {
     setCurrentVideo(video);
@@ -43,16 +79,11 @@ const VideoPage = () => {
   };
 
   const handleSave = () => {
-    const updatedVideos = videos.map((video) =>
-      video.id === currentVideo.id
-        ? { ...video, title: editedTitle, description: editedDescription }
-        : video
+    setVideos((prevVideos) =>
+      prevVideos.map((video) =>
+        video.id === currentVideo.id ? { ...video, title: editedTitle, description: editedDescription } : video
+      )
     );
-    setVideos(updatedVideos);
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
     setIsEditing(false);
   };
 
@@ -80,7 +111,6 @@ const VideoPage = () => {
       }
 
       setVideos((prevVideos) => prevVideos.filter((v) => v.id !== videoToDelete.id));
-      console.log(`Deleted video with ID: ${videoToDelete.id}`);
     } catch (error) {
       setError(error.message);
     } finally {
@@ -89,9 +119,13 @@ const VideoPage = () => {
     }
   };
 
-  const handleCancelDelete = () => {
-    setIsDeleteConfirmationOpen(false);
-    setVideoToDelete(null);
+  const handleVideoPlay = (video) => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+    }
+
+    videoRef.current = document.getElementById(`video-${video.id}`);
+    videoRef.current.play();
   };
 
   if (loading) {
@@ -107,7 +141,6 @@ const VideoPage = () => {
     return <div>Error: {error}</div>;
   }
 
-  // Filter videos into two rows based on checkbox status
   const checkedVideosList = videos.filter((video) => checkedVideos[video.id]);
   const uncheckedVideosList = videos.filter((video) => !checkedVideos[video.id]);
 
@@ -123,12 +156,14 @@ const VideoPage = () => {
             <div key={video.id} className="bg-white rounded shadow p-4 flex flex-col justify-between">
               <h2 className="font-semibold text-gray-700 mb-2">{video.title || 'Untitled Video'}</h2>
               <video
+                id={`video-${video.id}`}
                 width="100%"
                 height="200"
                 controls
-                src={video.s3Link}
+                data-src={video.s3Link}
                 title={video.title}
                 className="mb-4"
+                onPlay={() => handleVideoPlay(video)}
               >
                 Your browser does not support the video tag.
               </video>
@@ -156,12 +191,14 @@ const VideoPage = () => {
             <div key={video.id} className="bg-white rounded shadow p-4 flex flex-col justify-between transform scale-90">
               <h2 className="font-semibold text-gray-700 mb-2">{video.title || 'Untitled Video'}</h2>
               <video
+                id={`video-${video.id}`}
                 width="100%"
                 height="150"
                 controls
-                src={video.s3Link}
+                data-src={video.s3Link}
                 title={video.title}
                 className="mb-4"
+                onPlay={() => handleVideoPlay(video)}
               >
                 Your browser does not support the video tag.
               </video>
@@ -197,42 +234,35 @@ const VideoPage = () => {
         </div>
       </div>
 
-      {isEditing && currentVideo && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-1/2">
-            <h2 className="text-xl text-gray-700 font-bold mb-4">Edit Video</h2>
-            <video
-              width="100%"
-              height="200"
-              controls
-              src={currentVideo.s3Link}
-              title={currentVideo.title}
-              className="mb-4"
-            >
-              Your browser does not support the video tag.
-            </video>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-bold mb-2">Title</label>
-              <input
-                type="text"
-                value={editedTitle}
-                onChange={(e) => setEditedTitle(e.target.value)}
-                className="w-full px-3 py-2 border rounded"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-gray-700 font-bold mb-2">Description</label>
-              <textarea
-                value={editedDescription}
-                onChange={(e) => setEditedDescription(e.target.value)}
-                className="w-full px-3 py-2 border rounded"
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <button onClick={handleSave} className="bg-green-500 hover:bg-green-700 text-white py-2 px-4 rounded">
+      {/* Edit Modal */}
+      {isEditing && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="bg-white p-4 rounded shadow-md">
+            <h2 className="text-lg font-semibold mb-4">Edit Video</h2>
+            <label className="block mb-2">Title:</label>
+            <input
+              type="text"
+              value={editedTitle}
+              onChange={(e) => setEditedTitle(e.target.value)}
+              className="border rounded w-full p-2 mb-4"
+            />
+            <label className="block mb-2">Description:</label>
+            <textarea
+              value={editedDescription}
+              onChange={(e) => setEditedDescription(e.target.value)}
+              className="border rounded w-full p-2 mb-4"
+            />
+            <div className="flex justify-end">
+              <button
+                onClick={handleSave}
+                className="bg-green-500 hover:bg-green-700 text-white py-1 px-4 rounded mr-2"
+              >
                 Save
               </button>
-              <button onClick={handleCancel} className="bg-gray-500 hover:bg-gray-700 text-white py-2 px-4 rounded">
+              <button
+                onClick={() => setIsEditing(false)}
+                className="bg-gray-500 hover:bg-gray-700 text-white py-1 px-4 rounded"
+              >
                 Cancel
               </button>
             </div>
@@ -240,21 +270,22 @@ const VideoPage = () => {
         </div>
       )}
 
-      {isDeleteConfirmationOpen && videoToDelete && (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75 z-50">
-          <div className="bg-white p-6 rounded shadow-lg">
-            <h2 className="text-xl text-gray-700 font-bold mb-4">Confirm Delete</h2>
-            <p>Are you sure you want to delete the video titled '{videoToDelete.title}'?</p>
-            <div className="flex justify-end space-x-2 mt-4">
+      {/* Delete Confirmation Modal */}
+      {isDeleteConfirmationOpen && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="bg-white p-4 rounded shadow-md">
+            <h2 className="text-lg font-semibold mb-4">Confirm Delete</h2>
+            <p>Are you sure you want to delete this video?</p>
+            <div className="flex justify-end mt-4">
               <button
                 onClick={handleDelete}
-                className="bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded"
+                className="bg-red-500 hover:bg-red-700 text-white py-1 px-4 rounded mr-2"
               >
                 Delete
               </button>
               <button
-                onClick={handleCancelDelete}
-                className="bg-gray-500 hover:bg-gray-700 text-white py-2 px-4 rounded"
+                onClick={() => setIsDeleteConfirmationOpen(false)}
+                className="bg-gray-500 hover:bg-gray-700 text-white py-1 px-4 rounded"
               >
                 Cancel
               </button>
