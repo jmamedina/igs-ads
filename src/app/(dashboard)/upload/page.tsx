@@ -198,7 +198,8 @@ const UploadPage = () => {
         title: title,           // Include title
         description: description, // Include description
         s3Key: uniqueFileName,   // S3 key of the uploaded file
-        uploadTimestamp: new Date().toISOString(), // Timestamp of the upload
+        uploadTimestamp: new Date().toISOString(), 
+        active: 0 //使用するかどうかフラグ
       };
 
       // Upload metadata to DynamoDB
