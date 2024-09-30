@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -18,10 +19,25 @@ const provider = new CognitoIdentityServiceProvider({
     secretAccessKey: process.env.NEXT_PUBLIC_AWS_ACCESS_KEY || '',
   },
 });
+=======
+'use client'
+
+import React, { useState } from 'react';
+import { CognitoUserPool } from 'amazon-cognito-identity-js';
+
+// Ensure you import the userPool from your context or define it again here
+const poolData = {
+  UserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || '',
+  ClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '',
+};
+
+const userPool = new CognitoUserPool(poolData);
+>>>>>>> origin/main
 
 function UsersPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+<<<<<<< HEAD
   const [newPassword, setNewPassword] = useState('');
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState(''); // State for first name
@@ -31,6 +47,11 @@ function UsersPage() {
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
+=======
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+>>>>>>> origin/main
 
   const handleSignUp = async (e) => {
     e.preventDefault();
@@ -39,6 +60,7 @@ function UsersPage() {
 
     const attributeList = [
       {
+<<<<<<< HEAD
         Name: 'email',
         Value: email,
       },
@@ -50,6 +72,11 @@ function UsersPage() {
         Name: 'family_name', // Last name
         Value: lastName,
       },
+=======
+        Name: 'email', 
+        Value: email,
+      },
+>>>>>>> origin/main
     ];
 
     userPool.signUp(username, password, attributeList, null, (err, data) => {
@@ -60,6 +87,7 @@ function UsersPage() {
       }
       console.log('User registration successful:', data);
       setSuccess('User registration successful. Please check email to confirm.');
+<<<<<<< HEAD
       listUsers();
       setIsModalOpen(false);
     });
@@ -355,6 +383,46 @@ function UsersPage() {
           ))}
         </tbody>
       </table>
+=======
+    });
+  };
+
+  return (
+    <div>
+      <h1>UsersPage</h1>
+      <form onSubmit={handleSignUp}>
+        <div>
+          <label>Username</label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label>Password</label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+        <div>
+          <label>Email</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </div>
+        <button type="submit">Register</button>
+      </form>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {success && <p style={{ color: 'green' }}>{success}</p>}
+>>>>>>> origin/main
     </div>
   );
 }
