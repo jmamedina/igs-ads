@@ -11,11 +11,11 @@ const menuItems = [
     {
         title: "MENU",
         items: [
-            {
-                icon: "/home.png",
-                label: "トップ",
-                href: "/admin",
-            },
+            // {
+            //     icon: "/home.png",
+            //     label: "トップ",
+            //     href: "/admin",
+            // },
             {
                 icon: "/upload.png",
                 label: "アップロード",
@@ -31,11 +31,11 @@ const menuItems = [
     {
         title: "OTHER",
         items: [
-            {
-                icon: "/profile.png",
-                label: "プロフィル",
-                href: "/profile",
-            },
+            // {
+            //     icon: "/profile.png",
+            //     label: "プロフィル",
+            //     href: "/profile",
+            // },
             {
                 icon: "/profile.png",
                 label: "スタッフ管理",
@@ -60,7 +60,7 @@ const Menu = ({ cognitoUser }) => {
     const handleLogout = async () => {
         try {
             await signOut(cognitoUser);
-            router.push('/'); 
+            router.push('/login'); 
         } catch (error) {
             console.error("Logout failed: ", error);
         }

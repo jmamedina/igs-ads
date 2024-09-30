@@ -19,7 +19,7 @@ const AuthenticatedLayout: React.FC<{ children: React.ReactNode }> = ({ children
     }
   
     if (!loading && user && pathname === '/login') {
-      router.push('/admin');
+      router.push('/upload');
     }
   }, [user, loading, pathname, router]);
   

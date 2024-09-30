@@ -12,7 +12,7 @@ export default function DashboardLayout({
 
     {/* LEFT */}
     <div className="pt-3 w-[14%] md:w-[8%] lg:w-[16%] xl:w-[14%]">
-      <Link href="/" className="flex items-center justify-center lg:justify-start gap-2">
+      <Link href="/upload" className="flex items-center justify-center lg:justify-start gap-2">
         <div className="flex items-center gap-2 lg:pl-3 lg:pb-4 pb-4">
           <Image src="/igs.png" alt="logo" width={32} height={32} />
           <span className="hidden lg:block text-gray-700">IGS広告</span>

@@ -25,7 +25,7 @@ const LoginPage: React.FC = () => {
                 // Handling new password challenge
                 const session = await completeNewPasswordChallenge(cognitoUser, newPassword);
                 console.log('Access token after new password set:', session.getAccessToken().getJwtToken());
-                router.push('/admin'); // Redirect after setting the new password
+                router.push('/upload'); // Redirect after setting the new password
             } else {
                 // Standard sign-in
                 const result = await signIn(username, password);
@@ -35,7 +35,7 @@ const LoginPage: React.FC = () => {
                     setNewPasswordRequired(true);
                 } else {
                     // console.log('Access token:', result.getAccessToken().getJwtToken());
-                    router.push('/admin'); // Redirect after successful sign-in
+                    router.push('/upload'); // Redirect after successful sign-in
                 }
             }
         } catch (err: any) {
